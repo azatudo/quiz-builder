@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React from "react";
 
 export interface Answer {
   text: string;
@@ -25,32 +25,29 @@ export default function QuestionInput({
   onRemoveQuestion
 }: Props) {
 
-  const handleAnswerTextChange = (index: number, value: string) => {
+  const handleAnswerTextChange = (index: number, text: string) => {
     const newAnswers = [...answers];
-    newAnswers[index].text = value;
+    newAnswers[index].text = text;
     onChangeAnswers(newAnswers);
   };
 
-  const handleAnswerCorrectChange = (index: number, checked: boolean) => {
+  const handleAnswerCorrectChange = (index: number, isCorrect: boolean) => {
     const newAnswers = [...answers];
-
     if (type === "radio") {
-      newAnswers.forEach((a, i) => newAnswers[i].isCorrect = false);
-      newAnswers[index].isCorrect = checked;
+      newAnswers.forEach((a, i) => (a.isCorrect = i === index ? isCorrect : false));
     } else {
-      newAnswers[index].isCorrect = checked;
+      newAnswers[index].isCorrect = isCorrect;
     }
-
-    onChangeAnswers(newAnswers);
-  };
-
-  const handleDeleteAnswer = (index: number) => {
-    const newAnswers = answers.filter((_, i) => i !== index);
     onChangeAnswers(newAnswers);
   };
 
   const handleAddAnswer = () => {
     onChangeAnswers([...answers, { text: "", isCorrect: false }]);
+  };
+
+  const handleDeleteAnswer = (index: number) => {
+    const newAnswers = answers.filter((_, i) => i !== index);
+    onChangeAnswers(newAnswers);
   };
 
   return (
@@ -97,6 +94,9 @@ export default function QuestionInput({
                 checked={a.isCorrect}
                 onChange={(e) => handleAnswerCorrectChange(i, e.target.checked)}
               />
+              {type === "checkbox" && a.isCorrect && (
+                <span className="text-yellow-500 font-bold ml-1">*</span>
+              )}
               <button
                 type="button"
                 onClick={() => handleDeleteAnswer(i)}
@@ -106,6 +106,7 @@ export default function QuestionInput({
               </button>
             </div>
           ))}
+
           <button
             type="button"
             onClick={handleAddAnswer}
