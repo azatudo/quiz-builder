@@ -1,9 +1,6 @@
 import { useState } from "react";
 import QuestionInput from "../components/QuestionInput";
 import { createQuiz } from "../services/api";
-import { useNavigate } from "react-router-dom";
-
-export type QuestionType = "input" | "checkbox" | "radio";
 
 interface Answer {
   text: string;
@@ -12,14 +9,14 @@ interface Answer {
 
 interface Question {
   text: string;
-  type: QuestionType;
+  type: "input" | "checkbox" | "radio";
   answers: Answer[];
 }
 
 export default function CreateQuizPage() {
   const [title, setTitle] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
-  const navigate = useNavigate();
+  const [error, setError] = useState("");
 
   const addQuestion = () => {
     setQuestions([...questions, { text: "", type: "input", answers: [] }]);
@@ -36,45 +33,60 @@ export default function CreateQuizPage() {
   };
 
   const handleSubmit = async () => {
-    if (!title || questions.length === 0) {
-      alert("Quiz must have a title and at least one question");
+    setError("");
+
+    if (!title.trim() || questions.length === 0) {
+      setError("Quiz must have a title and at least one question");
       return;
     }
 
     try {
-      const quizRes = await createQuiz({ title, description: "", authorId: 1 });
-      const quizId = quizRes.id;
+      // Создаём квиз
+      const quiz = await createQuiz({ title: title.trim(), description: "", authorId: 1 });
+      const quizId = quiz.id;
 
       for (const q of questions) {
+        // Создаём вопрос
         const questionRes = await fetch(`http://localhost:4000/api/questions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: q.text, quizId, type: q.type }),
+          body: JSON.stringify({ text: q.text, type: q.type, quizId }),
         });
+
+        if (!questionRes.ok) {
+          throw new Error("Failed to create question");
+        }
+
         const questionData = await questionRes.json();
 
+        // Создаём ответы
         for (const a of q.answers) {
-          await fetch(`http://localhost:4000/api/answers`, {
+          const answerRes = await fetch(`http://localhost:4000/api/answers`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: a.text, isCorrect: a.isCorrect, questionId: questionData.id }),
           });
+
+          if (!answerRes.ok) {
+            throw new Error("Failed to create answer");
+          }
         }
       }
 
       alert("Quiz created!");
-      navigate("/quizzes");
+      setTitle("");
+      setQuestions([]);
     } catch (err) {
       console.error(err);
-      alert("Failed to create quiz");
+      setError("Failed to create quiz. Make sure backend is running and database is accessible.");
     }
   };
 
   return (
     <div className="p-6 max-w-3xl mx-auto mt-6">
       <button
-        onClick={() => navigate("/quizzes")}
         className="mb-4 px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+        onClick={() => window.history.back()}
       >
         ← Back
       </button>
@@ -99,6 +111,8 @@ export default function CreateQuizPage() {
           onRemoveQuestion={() => removeQuestion(i)}
         />
       ))}
+
+      {error && <p className="text-red-500 mb-2">{error}</p>}
 
       <div className="flex gap-2 mt-4">
         <button

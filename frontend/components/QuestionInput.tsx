@@ -1,11 +1,11 @@
 import { useState } from "react";
 
-export interface Answer {
+interface Answer {
   text: string;
   isCorrect: boolean;
 }
 
-export interface QuestionProps {
+interface Props {
   question: string;
   type: "input" | "checkbox" | "radio";
   answers: Answer[];
@@ -23,103 +23,94 @@ export default function QuestionInput({
   onChangeType,
   onChangeAnswers,
   onRemoveQuestion,
-}: QuestionProps) {
-  const [newAnswer, setNewAnswer] = useState("");
+}: Props) {
+  const [newAnswerText, setNewAnswerText] = useState("");
 
   const addAnswer = () => {
-    if (!newAnswer.trim()) return;
-    onChangeAnswers([...answers, { text: newAnswer, isCorrect: false }]);
-    setNewAnswer("");
+    if (!newAnswerText.trim()) return;
+    onChangeAnswers([...answers, { text: newAnswerText, isCorrect: false }]);
+    setNewAnswerText("");
   };
 
   const toggleCorrect = (index: number) => {
     const updated = answers.map((a, i) =>
-      i === index ? { ...a, isCorrect: !a.isCorrect } : a
+      type === "checkbox"
+        ? i === index
+          ? { ...a, isCorrect: !a.isCorrect }
+          : a
+        : i === index
+        ? { ...a, isCorrect: true }
+        : { ...a, isCorrect: false }
     );
     onChangeAnswers(updated);
   };
 
   const removeAnswer = (index: number) => {
-    const updated = answers.filter((_, i) => i !== index);
-    onChangeAnswers(updated);
+    onChangeAnswers(answers.filter((_, i) => i !== index));
   };
 
   return (
-    <div className="p-4 bg-gray-50 rounded mb-4 border">
+    <div className="mb-4 p-4 border rounded bg-gray-50">
       <div className="flex justify-between items-center mb-2">
         <input
           type="text"
           value={question}
           onChange={(e) => onChangeQuestion(e.target.value)}
           placeholder="Question text"
-          className="border p-1 rounded w-full mr-2"
+          className="border p-1 rounded w-full"
         />
         <button
-          type="button"
           onClick={onRemoveQuestion}
-          className="px-2 py-1 bg-red-500 text-white rounded"
+          className="ml-2 px-2 py-1 bg-red-500 text-white rounded"
         >
-          Delete
+          X
         </button>
       </div>
 
-      <div className="mb-2">
-        <label className="mr-2">
-          Type:
-          <select
-            value={type}
-            onChange={(e) =>
-              onChangeType(e.target.value as "input" | "checkbox" | "radio")
-            }
-            className="ml-1 border rounded p-1"
-          >
-            <option value="input">Input</option>
-            <option value="checkbox">Checkbox</option>
-            <option value="radio">Radio</option>
-          </select>
-        </label>
-      </div>
+      <select
+        value={type}
+        onChange={(e) => onChangeType(e.target.value as "input" | "checkbox" | "radio")}
+        className="border p-1 rounded mb-2"
+      >
+        <option value="input">Input (text)</option>
+        <option value="radio">Radio (single choice)</option>
+        <option value="checkbox">Checkbox (multi choice)</option>
+      </select>
 
       {type !== "input" && (
-        <div className="mb-2">
+        <div className="flex flex-col gap-1">
           {answers.map((a, i) => (
-            <div key={i} className="flex items-center gap-2 mb-1">
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type={type === "checkbox" ? "checkbox" : "radio"}
+                checked={a.isCorrect}
+                onChange={() => toggleCorrect(i)}
+              />
               <input
                 type="text"
                 value={a.text}
-                onChange={(e) => {
-                  const updated = [...answers];
-                  updated[i].text = e.target.value;
-                  onChangeAnswers(updated);
-                }}
-                placeholder="Answer text"
-                className="border p-1 rounded flex-1"
+                onChange={(e) =>
+                  onChangeAnswers(
+                    answers.map((ans, idx) => (idx === i ? { ...ans, text: e.target.value } : ans))
+                  )
+                }
+                className="border p-1 rounded w-full"
               />
-              <label className="flex items-center gap-1">
-                Correct
-                <input
-                  type="checkbox"
-                  checked={a.isCorrect}
-                  onChange={() => toggleCorrect(i)}
-                />
-              </label>
               <button
-                type="button"
                 onClick={() => removeAnswer(i)}
-                className="px-1 py-0.5 bg-red-400 text-white rounded"
+                className="px-1 py-1 bg-red-400 text-white rounded"
               >
                 X
               </button>
             </div>
           ))}
-
           <div className="flex gap-2 mt-1">
             <input
               type="text"
-              value={newAnswer}
-              onChange={(e) => setNewAnswer(e.target.value)}
+              value={newAnswerText}
+              onChange={(e) => setNewAnswerText(e.target.value)}
               placeholder="New answer"
-              className="border p-1 rounded flex-1"
+              className="border p-1 rounded w-full"
             />
             <button
               type="button"
