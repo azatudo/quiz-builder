@@ -26,7 +26,7 @@ app.post("/api/users", async (req: Request, res: Response) => {
   try {
     const user = await prisma.user.create({ data: { email, name } });
     res.json(user);
-  } catch {
+  } catch (error) {
     res.status(400).json({ error: "User already exists or invalid data" });
   }
 });
@@ -93,11 +93,11 @@ app.get("/api/quizzes/:id", async (req: Request, res: Response) => {
   res.json(quiz);
 });
 
-// Delete quiz
+// Delete quiz (с каскадным удалением вопросов и ответов)
 app.delete("/api/quizzes/:id", async (req: Request, res: Response) => {
   const id = Number(req.params.id);
   try {
-    await prisma.quiz.delete({ where: { id } });
+    await prisma.quiz.delete({ where: { id } }); // если в Prisma есть onDelete: Cascade для questions
     res.json({ message: "Quiz deleted successfully" });
   } catch {
     res.status(404).json({ error: "Quiz not found" });
