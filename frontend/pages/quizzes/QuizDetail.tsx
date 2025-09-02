@@ -12,7 +12,7 @@ interface Answer {
 interface Question {
   id: number;
   text: string;
-  type: "input" | "checkbox" | "radio";
+  type: "input" | "radio" | "checkbox";
   answers: Answer[];
 }
 
@@ -32,17 +32,23 @@ export default function QuizDetail() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
-
-    axios
-      .get<Quiz>(`http://localhost:4000/api/quizzes/${id}`)
-      .then((res) => setQuiz(res.data))
-      .catch((err) => console.error(err))
-      .then(() => setLoading(false)); // просто then вместо finally
+    const fetchQuiz = async () => {
+      if (!id) return;
+      try {
+        const res = await axios.get<Quiz>(`http://localhost:4000/api/quizzes/${id}`);
+        setQuiz(res.data);
+      } catch (err) {
+        console.error(err);
+        setQuiz(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuiz();
   }, [id]);
 
   const handleSelect = (questionId: number, answerId: number, multiple: boolean) => {
-    setUserAnswers((prev) => {
+    setUserAnswers(prev => {
       const prevAnswers = prev[questionId] || [];
       if (multiple) {
         const newAnswers = prevAnswers.includes(answerId)
@@ -56,7 +62,7 @@ export default function QuizDetail() {
   };
 
   const handleInputChange = (questionId: number, value: string) => {
-    setUserAnswers((prev) => ({ ...prev, [questionId]: value }));
+    setUserAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
   const handleSubmit = () => setSubmitted(true);
@@ -71,7 +77,7 @@ export default function QuizDetail() {
       if (selected === correctAnswer) return acc + 1;
     } else {
       const correct = q.answers.filter((a) => a.isCorrect).map((a) => a.id);
-      if (Array.isArray(selected) && selected.length === correct.length && selected.every((a) => correct.includes(a))) {
+      if (Array.isArray(selected) && selected.length === correct.length && selected.every(a => correct.includes(a))) {
         return acc + 1;
       }
     }
@@ -85,7 +91,7 @@ export default function QuizDetail() {
         <h1 className="text-3xl font-bold mb-4">{quiz.title}</h1>
         {quiz.description && <p className="mb-4 text-gray-600">{quiz.description}</p>}
 
-        {quiz.questions.map((q) => (
+        {quiz.questions.map(q => (
           <div key={q.id} className="p-4 bg-white rounded shadow mb-4">
             <h2 className="font-semibold mb-2">{q.text}</h2>
 
@@ -99,7 +105,7 @@ export default function QuizDetail() {
               />
             ) : (
               <div className="flex flex-col gap-2">
-                {q.answers.map((a: Answer) => {
+                {q.answers.map(a => {
                   const multiple = q.type === "checkbox";
                   const checked = Array.isArray(userAnswers[q.id]) && userAnswers[q.id].includes(a.id);
                   return (
@@ -121,7 +127,10 @@ export default function QuizDetail() {
         ))}
 
         {!submitted ? (
-          <button className="px-3 py-1 bg-green-500 text-white rounded" onClick={handleSubmit}>
+          <button
+            className="px-3 py-1 bg-green-500 text-white rounded"
+            onClick={handleSubmit}
+          >
             Submit
           </button>
         ) : (

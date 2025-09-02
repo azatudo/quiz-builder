@@ -9,7 +9,7 @@ interface Answer {
 
 interface Question {
   text: string;
-  type: "input" | "checkbox" | "radio";
+  type: "input" | "radio" | "checkbox";
   answers: Answer[];
 }
 
@@ -33,52 +33,39 @@ export default function CreateQuizPage() {
   };
 
   const handleSubmit = async () => {
-    setError("");
-
-    if (!title.trim() || questions.length === 0) {
+    if (!title || questions.length === 0) {
       setError("Quiz must have a title and at least one question");
       return;
     }
 
     try {
-      // Создаём квиз
-      const quiz = await createQuiz({ title: title.trim(), description: "", authorId: 1 });
+      const quiz = await createQuiz({ title, description: "", authorId: 1 });
       const quizId = quiz.id;
 
       for (const q of questions) {
-        // Создаём вопрос
         const questionRes = await fetch(`http://localhost:4000/api/questions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: q.text, type: q.type, quizId }),
         });
-
-        if (!questionRes.ok) {
-          throw new Error("Failed to create question");
-        }
-
         const questionData = await questionRes.json();
 
-        // Создаём ответы
         for (const a of q.answers) {
-          const answerRes = await fetch(`http://localhost:4000/api/answers`, {
+          await fetch(`http://localhost:4000/api/answers`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: a.text, isCorrect: a.isCorrect, questionId: questionData.id }),
           });
-
-          if (!answerRes.ok) {
-            throw new Error("Failed to create answer");
-          }
         }
       }
 
       alert("Quiz created!");
       setTitle("");
       setQuestions([]);
+      setError("");
     } catch (err) {
       console.error(err);
-      setError("Failed to create quiz. Make sure backend is running and database is accessible.");
+      setError("Failed to create quiz. Make sure backend is running.");
     }
   };
 
