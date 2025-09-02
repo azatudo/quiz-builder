@@ -93,14 +93,26 @@ app.get("/api/quizzes/:id", async (req: Request, res: Response) => {
   res.json(quiz);
 });
 
-// Delete quiz (с каскадным удалением вопросов и ответов)
+// Delete quiz
 app.delete("/api/quizzes/:id", async (req: Request, res: Response) => {
   const id = Number(req.params.id);
+
   try {
-    await prisma.quiz.delete({ where: { id } }); // если в Prisma есть onDelete: Cascade для questions
-    res.json({ message: "Quiz deleted successfully" });
+    await prisma.answer.deleteMany({
+      where: { question: { quizId: id } },
+    });
+
+    await prisma.question.deleteMany({
+      where: { quizId: id },
+    });
+
+    const deletedQuiz = await prisma.quiz.delete({
+      where: { id },
+    });
+
+    res.json({ message: "Quiz deleted successfully", quiz: deletedQuiz });
   } catch {
-    res.status(404).json({ error: "Quiz not found" });
+    res.status(404).json({ error: "Quiz not found or already deleted" });
   }
 });
 
