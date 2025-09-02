@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  quizzes   Quiz[]
+  createdAt DateTime @default(now())
+}
+
+model Quiz {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  author      User       @relation(fields: [authorId], references: [id])
+  authorId    Int
+  questions   Question[]
+  createdAt   DateTime   @default(now())
+}
+
+model Question {
+  id      Int      @id @default(autoincrement())
+  text    String
+  quiz    Quiz     @relation(fields: [quizId], references: [id])
+  quizId  Int
+  answers Answer[]
+}
+
+model Answer {
+  id         Int      @id @default(autoincrement())
+  text       String
+  isCorrect  Boolean  @default(false)
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId Int
+}
